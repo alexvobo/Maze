@@ -8,11 +8,29 @@ import A_STAR.repeated_forward_AStar as b_astar
 import A_STAR.adaptive_AStar as a_astar
 
 
-ROWS, COLS = 20, 20
+ROWS, COLS = 25, 25
+
+samp = [[0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0],
+        [1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+        [1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+        [0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+        [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1],
+        [0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0],
+        [1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0],
+        [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+        [1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]]
+samp_a = (2, 3)
+samp_g = (10, 10)
 
 
 class GameBoard(tk.Frame):
-    def __init__(self, parent, rows=ROWS, columns=COLS, size=50, color_unblocked="white", color_blocked="blue", color_visited='red'):
+    def __init__(self, parent, rows=ROWS, columns=COLS, size=50, color_unblocked="white", color_blocked="navy", color_visited='green', color_backtracking="red"):
         '''size is the size of a square, in pixels'''
 
         self.rows = rows
@@ -21,16 +39,21 @@ class GameBoard(tk.Frame):
         self.color_unblocked = color_unblocked
         self.color_blocked = color_blocked
         self.color_visited = color_visited
+        self.color_backtracking = color_backtracking
         self.pieces = {}
 
         # Create map and log the obstacles
         self.maze = Map(self.rows).maze
+        # self.maze = samp
         self.obstacles = self.find_obstacles()
 
+        # self.goal_pos = samp_g
+        # self.agent_pos = samp_a
         self.goal_pos = self.generate_pos()
         self.agent_pos = self.generate_pos()
 
         self.a_star = []
+        self.backtracking = []
         self.astar('forward')
         # region canvas and bindings
         tk.Frame.__init__(self, parent)
@@ -43,7 +66,6 @@ class GameBoard(tk.Frame):
         self.canvas.bind("<Configure>", self.refresh)
         #self.canvas.bind("<Enter>", self.astar)
         # endregion
-
 
     def find_obstacles(self):
         # Iterate through the maze, if we see objects add (x,y) to the list
@@ -105,6 +127,9 @@ class GameBoard(tk.Frame):
                 color = self.color_unblocked if self.maze[row][col] == 0 else self.color_blocked
                 if (row, col) in self.a_star:
                     color = self.color_visited
+
+                if (row, col) in self.backtracking:
+                    color = self.color_backtracking
                 self.draw_square(x, y, color)
 
         for name in self.pieces:
@@ -114,18 +139,19 @@ class GameBoard(tk.Frame):
 
     def astar(self, event, type='forward'):
         if type == "forward":
-            self.a_star = f_astar.forward_astar(
+            self.a_star, self.backtracking = f_astar.forward_astar(
                 self.maze, self.agent_pos, self.goal_pos)
         elif type == "backward":
-            self.a_star = b_astar.forward_astar(
+            self.a_star, self.backtracking = b_astar.forward_astar(
                 self.maze, self.agent_pos, self.goal_pos)
         elif type == "adaptive":
-            self.a_star = a_astar.forward_astar(
+            self.a_star, self.backtracking = a_astar.forward_astar(
                 self.maze, self.agent_pos, self.goal_pos)
         else:
             print("--Failed. A* Type Invalid--")
             return
 
+    def print_path(self):
         print(self.a_star)
 
 
@@ -153,6 +179,5 @@ if __name__ == "__main__":
     agent_img = generate_image('imgs/agent.png', piece_size)
     board.addpiece("agent", agent_img, *board.agent_pos)
     # endregion
-
     # run the app
     root.mainloop()

@@ -79,8 +79,10 @@ def forward_astar(maze, start_pos, goal_pos):
 
         # Goal square is in closed list -> path found
         if goal_pos in closedList:
-            print("goal found, backtracking...")
-            return construct_path(curr_square)
+            print("goal found, finding shortest path...")
+            shortest_path = construct_path(curr_square)
+            backtracking = list_difference(closedList, shortest_path)
+            return shortest_path, backtracking
 
         # !  For each of the 4 squares adjacent to current square...
 
@@ -112,7 +114,7 @@ def forward_astar(maze, start_pos, goal_pos):
         #            (1, 0), (1, -1), (0, -1), (-1, -1)]
     # Open list is empty -> no path found
     print("Path not found")
-    return []
+    return [], []
     # * Step 3: BACKTRACK. Go from each square to parent square until start pos is reached. That's the path
     # endregion A*
 
@@ -129,6 +131,10 @@ def forward_astar(maze, start_pos, goal_pos):
 
 def add_positions(pos1, pos2):
     return tuple(map(sum, zip(pos1, pos2)))
+
+
+def list_difference(a, b):
+    return list(set(a)-set(b))
 
 
 def construct_path(node):
