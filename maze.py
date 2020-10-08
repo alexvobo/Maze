@@ -3,9 +3,9 @@ from PIL import Image, ImageTk
 from map import Map
 import random
 import math
-import repeated_forward_AStar as f_astar
-import repeated_forward_AStar as b_astar
-import adaptive_AStar as a_astar
+import A_STAR.repeated_forward_AStar as f_astar
+import A_STAR.repeated_forward_AStar as b_astar
+import A_STAR.adaptive_AStar as a_astar
 
 
 ROWS, COLS = 30, 30
@@ -145,10 +145,11 @@ if __name__ == "__main__":
 
     # region add game pieces
     piece_size = math.floor(board.size/1.5)
-    goal_img = generate_image('house.png', piece_size)
+
+    goal_img = generate_image('imgs/house.png', piece_size)
     board.addpiece("goal", goal_img, *board.goal_pos)
 
-    agent_img = generate_image('agent.png', piece_size)
+    agent_img = generate_image('imgs/agent.png', piece_size)
     board.addpiece("agent", agent_img, *board.agent_pos)
     # endregion
 
