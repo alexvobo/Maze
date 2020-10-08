@@ -2,13 +2,13 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from map import Map
 import random
-
+import math
 import repeated_forward_AStar as f_astar
 import repeated_forward_AStar as b_astar
 import adaptive_AStar as a_astar
 
 
-ROWS, COLS = 10, 10
+ROWS, COLS = 30, 30
 
 
 class GameBoard(tk.Frame):
@@ -128,7 +128,8 @@ class GameBoard(tk.Frame):
         print(self.a_star)
 
 
-def generate_image(file_name, width=50, height=50):
+def generate_image(file_name, size=50):
+    width = height = size
     img = Image.open(file_name)
     img = img.resize((width, height), Image.ANTIALIAS)
     return ImageTk.PhotoImage(img)
@@ -143,10 +144,11 @@ if __name__ == "__main__":
     board.pack(side="top", fill="both", expand="true", padx=4, pady=4)
 
     # region add game pieces
-    goal_img = generate_image('house.png')
+    piece_size = math.floor(board.size/1.5)
+    goal_img = generate_image('house.png', piece_size)
     board.addpiece("goal", goal_img, *board.goal_pos)
 
-    agent_img = generate_image('agent.png')
+    agent_img = generate_image('agent.png', piece_size)
     board.addpiece("agent", agent_img, *board.agent_pos)
     # endregion
 
