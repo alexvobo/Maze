@@ -55,9 +55,7 @@ def forward_astar(maze, start_pos, goal_pos):
     # endregion
     # region A*
     row_bound, col_bound = len(maze), len(maze[0])
-    count = 0
     # we can't assume matrix will be square so we need to factor rows and cols
-    max_iter = (row_bound*col_bound)//2
 
     start = Node(start_pos)
     # start.h = heuristic(start_pos, goal_pos)
@@ -71,50 +69,43 @@ def forward_astar(maze, start_pos, goal_pos):
     heappush(openList, start)
     # * Step 2: Repeat...
     while openList:
-        count += 1
 
-        # ! A. Look for lowest f cost square in open list. This is curr_square
+        # !  Look for lowest f cost square in open list.
         curr_square = heappop(openList)
-        print(curr_square)
-        if count > max_iter:
-            print("Too many cycles")
-            return closedList
+        # print(curr_square)
 
-        # ! B. Move it to closed list
+        # ! Move it to closed list
         closedList.append(curr_square.pos)
 
         # Goal square is in closed list -> path found
         if goal_pos in closedList:
             print("goal found, backtracking...")
-            return closedList
+            return construct_path(curr_square)
 
-        # ! C. For each of the 4/8 squares adjacent to current square
+        # !  For each of the 4 squares adjacent to current square...
 
         adj_pos = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Clockwise around node
 
         # Create the new search positions. we will filter them in the loop
-        children = list(
+        successors = list(
             map(lambda p: add_positions(curr_square.pos, p), adj_pos))
 
-        print(curr_square.pos)
-        print(children)
-
-        for p in children:
+        for succ in successors:
             # If not within bounds -> ignore
-            if p[0] >= row_bound or p[0] < 0 or p[1] >= col_bound or p[1] < 0:
+            if succ[0] >= row_bound or succ[0] < 0 or succ[1] >= col_bound or succ[1] < 0:
                 continue
             # If not walkable -> ignore
-            if maze[p[0]][p[1]] == 1:
+            if maze[succ[0]][succ[1]] == 1:
                 continue
-
             # If in closed list or open list -> ignore
-            if p in closedList or inHeap(p, openList):
+            if succ in closedList or inHeap(succ, openList):
                 continue
 
             # Make curr square the parent.
-            new_node = Node(p, parent=curr_square)
-            #  Calculate f,g,h costs of square
+            new_node = Node(succ, parent=curr_square)
+            #  Calculate costs of square
             new_node.recalc(goal_pos)
+            # Add square to open list
             heappush(openList, new_node)
 
         # adj_pos = [(-1, 0), (-1, 1), (0, 1), (1, 1),
@@ -140,12 +131,13 @@ def add_positions(pos1, pos2):
     return tuple(map(sum, zip(pos1, pos2)))
 
 
-# def backtrack(node):
-#     backtracking = []
-#     curr = node
-#     # Go from goal node to start node via parents
-#     while curr is not None:
-#         backtracking.append(curr.pos)
-#         curr = node.parent
-#     # Reverse the path since we are going from start to goal
-#     return backtracking[::-1]
+def construct_path(node):
+    path = []
+    curr = node
+
+    # Go from goal node to start node via parents
+    while curr is not None:
+        path.insert(0, curr.pos)
+        curr = curr.parent
+
+    return path

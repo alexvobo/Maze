@@ -8,7 +8,7 @@ import A_STAR.repeated_forward_AStar as b_astar
 import A_STAR.adaptive_AStar as a_astar
 
 
-ROWS, COLS = 30, 30
+ROWS, COLS = 20, 20
 
 
 class GameBoard(tk.Frame):
@@ -43,6 +43,7 @@ class GameBoard(tk.Frame):
         self.canvas.bind("<Configure>", self.refresh)
         #self.canvas.bind("<Enter>", self.astar)
         # endregion
+
 
     def find_obstacles(self):
         # Iterate through the maze, if we see objects add (x,y) to the list
