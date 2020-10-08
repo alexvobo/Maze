@@ -3,9 +3,12 @@ from PIL import Image, ImageTk
 from map import Map
 import random
 
-import repeated_forward_AStar as astar
+import repeated_forward_AStar as f_astar
+import repeated_forward_AStar as b_astar
+import adaptive_AStar as a_astar
 
-ROWS, COLS = 20, 20
+
+ROWS, COLS = 10, 10
 
 
 class GameBoard(tk.Frame):
@@ -27,7 +30,8 @@ class GameBoard(tk.Frame):
         self.goal_pos = self.generate_pos()
         self.agent_pos = self.generate_pos()
 
-        self.shortest_path = [(0, 2), (0, 3), (0, 4)]
+        self.a_star = []
+        self.astar('forward')
         # region canvas and bindings
         tk.Frame.__init__(self, parent)
         canvas_width = columns * size
@@ -37,6 +41,7 @@ class GameBoard(tk.Frame):
         self.canvas.pack(side="top", fill="both", expand=True, padx=2, pady=2)
         # this binding will cause a refresh if the user interactively changes the window size
         self.canvas.bind("<Configure>", self.refresh)
+        #self.canvas.bind("<Enter>", self.astar)
         # endregion
 
     def find_obstacles(self):
@@ -49,8 +54,8 @@ class GameBoard(tk.Frame):
         return obstacles
 
     def generate_pos(self):
-        row = random.randint(0, self.rows)
-        col = random.randint(0, self.columns)
+        row = random.randint(0, self.rows-1)
+        col = random.randint(0, self.columns-1)
 
         # invalid positions include obstacles and goal or agent states already added
         invalid_positions = self.obstacles + \
@@ -58,8 +63,8 @@ class GameBoard(tk.Frame):
 
         # keep generating positions until they are valid
         while (row, col) in invalid_positions:
-            row = random.randint(0, self.rows)
-            col = random.randint(0, self.columns)
+            row = random.randint(0, self.rows-1)
+            col = random.randint(0, self.columns-1)
 
         return (row, col)
 
@@ -97,7 +102,7 @@ class GameBoard(tk.Frame):
                 # Blocked regions: color2
 
                 color = self.color_unblocked if self.maze[row][col] == 0 else self.color_blocked
-                if (row, col) in self.shortest_path:
+                if (row, col) in self.a_star:
                     color = self.color_visited
                 self.draw_square(x, y, color)
 
@@ -105,6 +110,22 @@ class GameBoard(tk.Frame):
             self.placepiece(name, self.pieces[name][0], self.pieces[name][1])
         self.canvas.tag_raise("piece")
         self.canvas.tag_lower("square")
+
+    def astar(self, event, type='forward'):
+        if type == "forward":
+            self.a_star = f_astar.forward_astar(
+                self.maze, self.agent_pos, self.goal_pos)
+        elif type == "backward":
+            self.a_star = b_astar.forward_astar(
+                self.maze, self.agent_pos, self.goal_pos)
+        elif type == "adaptive":
+            self.a_star = a_astar.forward_astar(
+                self.maze, self.agent_pos, self.goal_pos)
+        else:
+            print("--Failed. A* Type Invalid--")
+            return
+
+        print(self.a_star)
 
 
 def generate_image(file_name, width=50, height=50):
@@ -122,7 +143,7 @@ if __name__ == "__main__":
     board.pack(side="top", fill="both", expand="true", padx=4, pady=4)
 
     # region add game pieces
-    goal_img = generate_image('goal.png')
+    goal_img = generate_image('house.png')
     board.addpiece("goal", goal_img, *board.goal_pos)
 
     agent_img = generate_image('agent.png')

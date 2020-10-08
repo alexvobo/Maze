@@ -19,6 +19,33 @@ class Node:
     def __repr__(self):
         return repr((self.pos, self.f, self.h, self.g, self.parent))
 
+    def __eq__(self, other):
+        return self.pos == other.pos
+
+    def __lt__(self, other):
+        return self.f < other.f
+
+    def __gt__(self, other):
+        return self.f > other.f
+
+    def recalc(self, goal_pos):
+        self.g += 1
+        self.h = self.heuristic(self.pos, goal_pos)
+        self.f = self.g + self.h
+
+    def heuristic(self, start, end):
+        # Return manhattan distance
+        (x1, y1) = start
+        (x2, y2) = end
+        return abs(x1 - x2) + abs(y1 - y2)
+
+
+def inHeap(pos, openList):
+    for n in openList:
+        if pos == n.pos:
+            return True
+    return False
+
 
 def forward_astar(maze, start_pos, goal_pos):
     # region time/memory mgmt.
@@ -27,67 +54,74 @@ def forward_astar(maze, start_pos, goal_pos):
     # t1 = time.perf_counter()
     # endregion
     # region A*
-    row_bound = len(maze)
-    col_bound = len(maze[0])
+    row_bound, col_bound = len(maze), len(maze[0])
+    count = 0
+    # we can't assume matrix will be square so we need to factor rows and cols
+    max_iter = (row_bound*col_bound)//2
+
     start = Node(start_pos)
     # start.h = heuristic(start_pos, goal_pos)
     goal = Node(goal_pos)
-    count = 0
-    max_iter = (row_bound*col_bound)//2
+
+    print("Start pos:", start.pos)
+    print("Goal pos:", goal.pos)
     # * Step 1: Add starting node to open list
     openList = []
     closedList = []
-    heappush(openList, (start.f, start))
-
+    heappush(openList, start)
     # * Step 2: Repeat...
     while openList:
         count += 1
 
-        # ^ A. Look for lowest f cost square in open list. This is curr_square
+        # ! A. Look for lowest f cost square in open list. This is curr_square
         curr_square = heappop(openList)
-        # ^ B. Move it to closed list
-        closedList.append(curr_square.pos)
-        if curr_square.pos in closedList:
-            print("goal found, backtracking...")
-            return backtrack(curr_square)
-
+        print(curr_square)
         if count > max_iter:
             print("Too many cycles")
-            return backtrack(curr_square)
+            return closedList
 
-        # ^ C. For each of the 4/8 squares adjacent to current square
-        children = []
+        # ! B. Move it to closed list
+        closedList.append(curr_square.pos)
+
+        # Goal square is in closed list -> path found
+        if goal_pos in closedList:
+            print("goal found, backtracking...")
+            return closedList
+
+        # ! C. For each of the 4/8 squares adjacent to current square
 
         adj_pos = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Clockwise around node
-        for p in adj_pos:
-            # Add current square to one of the adj positions to get new pos
-            new_pos = add_positions(curr_square.pos, p)
 
+        # Create the new search positions. we will filter them in the loop
+        children = list(
+            map(lambda p: add_positions(curr_square.pos, p), adj_pos))
+
+        print(curr_square.pos)
+        print(children)
+
+        for p in children:
             # If not within bounds -> ignore
-            if new_pos[0] > row_bound-1 or new_pos[0] < 0 or new_pos[1] > col_bound or new_pos[1] < 0:
+            if p[0] >= row_bound or p[0] < 0 or p[1] >= col_bound or p[1] < 0:
+                continue
+            # If not walkable -> ignore
+            if maze[p[0]][p[1]] == 1:
                 continue
 
-            # If not walkable or in closed list -> ignore
-            if new_pos in closedList or maze[new_pos[0]][new_pos[1]] == 1:
+            # If in closed list or open list -> ignore
+            if p in closedList or inHeap(p, openList):
                 continue
 
-            # If not in open list, add it. Make curr square the parent.
-            if new_pos not in openList:
-                new_node = Node(new_pos, parent=curr_square)
-                children.append(new_node)
-                #  Record f,g,h costs of square
-            else:
-                # If already in open list, check if path to that square is a better path
-                # -> If path better, change parent of square to curr square, recalc G F scores of square
-                pass
+            # Make curr square the parent.
+            new_node = Node(p, parent=curr_square)
+            #  Calculate f,g,h costs of square
+            new_node.recalc(goal_pos)
+            heappush(openList, new_node)
+
         # adj_pos = [(-1, 0), (-1, 1), (0, 1), (1, 1),
         #            (1, 0), (1, -1), (0, -1), (-1, -1)]
-
-        # HEAP: Resort if necessary
-        # ^ D. STOP WHEN...
-        #! Goal square is in closed list -> path found
-        #! Open list is empty -> no path found
-
+    # Open list is empty -> no path found
+    print("Path not found")
+    return []
     # * Step 3: BACKTRACK. Go from each square to parent square until start pos is reached. That's the path
     # endregion A*
 
@@ -106,23 +140,12 @@ def add_positions(pos1, pos2):
     return tuple(map(sum, zip(pos1, pos2)))
 
 
-def computePath():
-    pass
-
-
-def backtrack(node):
-    backtracking = []
-    curr = node
-    # Go from goal node to start node via parents
-    while curr is not None:
-        backtracking.append(curr.pos)
-        curr = node.parent
-    # Reverse the path since we are going from start to goal
-    return backtracking[::-1]
-
-
-def heuristic(start, end):
-    # Return manhattan distance
-    (x1, y1) = start
-    (x2, y2) = end
-    return abs(x1 - x2) + abs(y1 - y2)
+# def backtrack(node):
+#     backtracking = []
+#     curr = node
+#     # Go from goal node to start node via parents
+#     while curr is not None:
+#         backtracking.append(curr.pos)
+#         curr = node.parent
+#     # Reverse the path since we are going from start to goal
+#     return backtracking[::-1]
