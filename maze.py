@@ -3,12 +3,16 @@ from PIL import Image, ImageTk
 from map import Map
 import random
 import math
-import A_STAR.repeated_forward_AStar as f_astar
-import A_STAR.repeated_forward_AStar as b_astar
+
+import psutil
+import time
+import os
+import ast
+import A_STAR.Repeated_AStar as f_astar
 import A_STAR.adaptive_AStar as a_astar
 
 
-ROWS, COLS = 25, 25
+ROWS, COLS = 50, 50
 
 samp = [[0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0],
         [1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0],
@@ -25,12 +29,12 @@ samp = [[0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0],
         [1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0],
         [1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
         [0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]]
-samp_a = (2, 3)
-samp_g = (10, 10)
+samp_a = (0, 0)
+samp_g = (49, 49)
 
 
 class GameBoard(tk.Frame):
-    def __init__(self, parent, rows=ROWS, columns=COLS, size=50, color_unblocked="white", color_blocked="navy", color_visited='green', color_backtracking="red"):
+    def __init__(self, parent, rows=ROWS, columns=COLS, size=50, color_unblocked="white", color_blocked="navy", shortest_path='green', color_expanded="red"):
         '''size is the size of a square, in pixels'''
 
         self.rows = rows
@@ -38,23 +42,25 @@ class GameBoard(tk.Frame):
         self.size = size
         self.color_unblocked = color_unblocked
         self.color_blocked = color_blocked
-        self.color_visited = color_visited
-        self.color_backtracking = color_backtracking
+        self.shortest_path = shortest_path
+        self.color_expanded = color_expanded
         self.pieces = {}
 
         # Create map and log the obstacles
-        self.maze = Map(self.rows).maze
-        # self.maze = samp
+        # self.maze = Map(self.rows).maze
+        self.maze = load_map("saved_mazes", "maze_2.txt")
         self.obstacles = self.find_obstacles()
 
-        # self.goal_pos = samp_g
-        # self.agent_pos = samp_a
-        self.goal_pos = self.generate_pos()
-        self.agent_pos = self.generate_pos()
+        self.goal_pos = samp_g
+        self.agent_pos = samp_a
+        # self.goal_pos = self.generate_pos()
+        # self.agent_pos = self.generate_pos()
 
         self.a_star = []
-        self.backtracking = []
+        self.expanded = []
+        # self.astar('forward')
         self.astar('forward')
+
         # region canvas and bindings
         tk.Frame.__init__(self, parent)
         canvas_width = columns * size
@@ -64,7 +70,7 @@ class GameBoard(tk.Frame):
         self.canvas.pack(side="top", fill="both", expand=True, padx=2, pady=2)
         # this binding will cause a refresh if the user interactively changes the window size
         self.canvas.bind("<Configure>", self.refresh)
-        #self.canvas.bind("<Enter>", self.astar)
+        # self.canvas.bind("<Enter>", self.astar)
         # endregion
 
     def find_obstacles(self):
@@ -125,11 +131,12 @@ class GameBoard(tk.Frame):
                 # Blocked regions: color2
 
                 color = self.color_unblocked if self.maze[row][col] == 0 else self.color_blocked
-                if (row, col) in self.a_star:
-                    color = self.color_visited
 
-                if (row, col) in self.backtracking:
-                    color = self.color_backtracking
+                if (row, col) in self.a_star:
+                    color = self.shortest_path
+
+                if (row, col) in self.expanded:
+                    color = self.color_expanded
                 self.draw_square(x, y, color)
 
         for name in self.pieces:
@@ -138,18 +145,36 @@ class GameBoard(tk.Frame):
         self.canvas.tag_lower("square")
 
     def astar(self, event, type='forward'):
+        # region time/memory mgmt.
+        process = psutil.Process(os.getpid())
+        mem_before = process.memory_info().rss / 1024 / 1024
+        t1 = time.perf_counter()
+        # endregion
         if type == "forward":
-            self.a_star, self.backtracking = f_astar.forward_astar(
+            self.a_star, self.expanded = f_astar.forward_astar(
                 self.maze, self.agent_pos, self.goal_pos)
         elif type == "backward":
-            self.a_star, self.backtracking = b_astar.forward_astar(
-                self.maze, self.agent_pos, self.goal_pos)
+            self.a_star, self.expanded = f_astar.forward_astar(
+                self.maze, self.goal_pos, self.agent_pos)
         elif type == "adaptive":
-            self.a_star, self.backtracking = a_astar.forward_astar(
+            self.a_star, self.expanded = a_astar.forward_astar(
                 self.maze, self.agent_pos, self.goal_pos)
         else:
             print("--Failed. A* Type Invalid--")
-            return
+
+        # region time/memory mgmt.
+        t2 = time.perf_counter()
+        # To check how much memory used
+        mem_after = process.memory_info().rss / 1024 / 1024
+        total_time = t2 - t1
+        print("Before memory: {}MB".format(mem_before))
+        print("After memory: {}MB".format(mem_after))
+        print("Total time: {}second".format(total_time))
+        print("TOTAL EXPANDED:{}\n SHORTEST PATH LEN: {}".format(
+            len(self.expanded)+len(self.a_star), len(self.a_star)))
+        # endregion
+
+        return
 
     def print_path(self):
         print(self.a_star)
@@ -160,6 +185,15 @@ def generate_image(file_name, size=50):
     img = Image.open(file_name)
     img = img.resize((width, height), Image.ANTIALIAS)
     return ImageTk.PhotoImage(img)
+
+
+def load_map(path, fileName):
+    # Opens first maze file
+    with open(os.path.join(path, fileName), 'r') as file:
+        # Gets grid in string form
+        grid_str = file.readline()
+        # converts string to list of lists
+        return ast.literal_eval(grid_str)
 
 
 if __name__ == "__main__":

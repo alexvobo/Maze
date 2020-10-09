@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 
 class Map:
@@ -19,3 +20,20 @@ class Map:
         # for x in grid:
         #     print(x)
         return grid
+
+
+def save():
+    # Check if mazes folder exists. If not, create it.
+    path = 'saved_mazes'
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    # Creates NUM_MAZES mazes and saves them in mazes directory
+    for i in range(20):
+        map_obj = Map(50)
+        with open(os.path.join(path, "maze_" + str(i) + ".txt"), 'w') as file:
+            maze = map_obj.maze
+            file.write(str(maze))
+
+
+

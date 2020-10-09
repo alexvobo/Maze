@@ -1,9 +1,6 @@
 from heapq import heappop, heappush
 
-import time
-import os
 import math
-G_VALUE = 1
 
 
 class Node:
@@ -28,8 +25,8 @@ class Node:
     def __gt__(self, other):
         return self.f > other.f
 
-    def recalc(self, goal_pos):
-        self.g += 1
+    def recalc(self, goal_pos, new_g):
+        self.g = math.dist(new_g, self.pos)
         self.h = self.heuristic(self.pos, goal_pos)
         self.f = self.g + self.h
 
@@ -48,19 +45,13 @@ def inHeap(pos, openList):
 
 
 def forward_astar(maze, start_pos, goal_pos):
-    # region time/memory mgmt.
-    # process = psutil.Process(os.getpid())
-    # mem_before = process.memory_info().rss / 1024 / 1024
-    # t1 = time.perf_counter()
-    # endregion
-    # region A*
     row_bound, col_bound = len(maze), len(maze[0])
     # we can't assume matrix will be square so we need to factor rows and cols
 
     start = Node(start_pos)
     # start.h = heuristic(start_pos, goal_pos)
     goal = Node(goal_pos)
-
+    count = 0
     print("Start pos:", start.pos)
     print("Goal pos:", goal.pos)
     # * Step 1: Add starting node to open list
@@ -73,7 +64,7 @@ def forward_astar(maze, start_pos, goal_pos):
         # !  Look for lowest f cost square in open list.
         curr_square = heappop(openList)
         # print(curr_square)
-
+        count += 1
         # ! Move it to closed list
         closedList.append(curr_square.pos)
 
@@ -106,7 +97,7 @@ def forward_astar(maze, start_pos, goal_pos):
             # Make curr square the parent.
             new_node = Node(succ, parent=curr_square)
             #  Calculate costs of square
-            new_node.recalc(goal_pos)
+            new_node.recalc(goal_pos, start_pos)
             # Add square to open list
             heappush(openList, new_node)
 
@@ -115,18 +106,7 @@ def forward_astar(maze, start_pos, goal_pos):
     # Open list is empty -> no path found
     print("Path not found")
     return [], []
-    # * Step 3: BACKTRACK. Go from each square to parent square until start pos is reached. That's the path
-    # endregion A*
-
-    # region time/memory mgmt.
-    # t2 = time.perf_counter()
-    # # To check how much memory used
-    # mem_after = process.memory_info().rss / 1024 / 1024
-    # total_time = t2 - t1
-    # print("Before memory: {}MB".format(mem_before))
-    # print("After memory: {}MB".format(mem_after))
-    # print("Total time: {}second".format(total_time))
-    # endregion
+# * Step 3: BACKTRACK. Go from each square to parent square until start pos is reached. That's the path
 
 
 def add_positions(pos1, pos2):
@@ -134,6 +114,7 @@ def add_positions(pos1, pos2):
 
 
 def list_difference(a, b):
+    # We dont have any duplicates in our list so converting to set wont change anything
     return list(set(a)-set(b))
 
 
