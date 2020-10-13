@@ -1,6 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
-from map import Map
+from map_class import Map
 import random
 import math
 
@@ -47,8 +47,8 @@ class GameBoard(tk.Frame):
         self.pieces = {}
 
         # Create map and log the obstacles
-        # self.maze = Map(self.rows).maze
-        self.maze = load_map("saved_mazes", "maze_2.txt")
+        self.maze = Map(self.rows).maze
+        #self.maze = load_map("saved_mazes", "maze_2.txt")
         self.obstacles = self.find_obstacles()
 
         self.goal_pos = samp_g

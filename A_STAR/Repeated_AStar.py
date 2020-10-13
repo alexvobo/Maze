@@ -4,7 +4,7 @@ import math
 
 
 class Node:
-    def __init__(self, pos, f=0, g=0, h=0, parent=None):
+    def __init__(self, pos, f=0, g=1, h=0, parent=None):
         self.pos = pos   # type is tuple
 
         self.f = f
@@ -25,8 +25,14 @@ class Node:
     def __gt__(self, other):
         return self.f > other.f
 
-    def recalc(self, goal_pos, new_g):
-        self.g = math.dist(new_g, self.pos)
+    def recalc(self, goal_pos, start_pos):
+        # self.g = math.dist(start_pos, self.pos)
+        # self.g = 1
+        if self.parent is not None:
+            # parent exists we increment parent g value as our new g
+            self.g = self.parent.g + 1
+        else:
+            self.g = 1
         self.h = self.heuristic(self.pos, goal_pos)
         self.f = self.g + self.h
 
@@ -51,9 +57,8 @@ def forward_astar(maze, start_pos, goal_pos):
     start = Node(start_pos)
     # start.h = heuristic(start_pos, goal_pos)
     goal = Node(goal_pos)
-    count = 0
-    print("Start pos:", start.pos)
-    print("Goal pos:", goal.pos)
+    #print("Start pos:", start.pos)
+    #print("Goal pos:", goal.pos)
     # * Step 1: Add starting node to open list
     openList = []
     closedList = []
@@ -64,13 +69,13 @@ def forward_astar(maze, start_pos, goal_pos):
         # !  Look for lowest f cost square in open list.
         curr_square = heappop(openList)
         # print(curr_square)
-        count += 1
+
         # ! Move it to closed list
         closedList.append(curr_square.pos)
 
         # Goal square is in closed list -> path found
         if goal_pos in closedList:
-            print("goal found, finding shortest path...")
+            #print("goal found, finding shortest path...")
             shortest_path = construct_path(curr_square)
             backtracking = list_difference(closedList, shortest_path)
             return shortest_path, backtracking
@@ -104,7 +109,7 @@ def forward_astar(maze, start_pos, goal_pos):
         # adj_pos = [(-1, 0), (-1, 1), (0, 1), (1, 1),
         #            (1, 0), (1, -1), (0, -1), (-1, -1)]
     # Open list is empty -> no path found
-    print("Path not found")
+    #print("Path not found")
     return [], []
 # * Step 3: BACKTRACK. Go from each square to parent square until start pos is reached. That's the path
 
