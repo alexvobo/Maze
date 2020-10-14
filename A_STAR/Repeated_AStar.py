@@ -26,13 +26,13 @@ class Node:
         return self.f > other.f
 
     def recalc(self, goal_pos, start_pos):
-        # self.g = math.dist(start_pos, self.pos)
-        # self.g = 1
-        if self.parent is not None:
-            # parent exists we increment parent g value as our new g
-            self.g = self.parent.g + 1
-        else:
-            self.g = 1
+        #self.g = math.dist(start_pos, self.pos)
+        self.g = 1
+        # if self.parent is not None:
+        #     # parent exists we increment parent g value as our new g
+        #     self.g = self.parent.g + 1
+        # else:
+        #     self.g = 1
         self.h = self.heuristic(self.pos, goal_pos)
         self.f = self.g + self.h
 

@@ -1,0 +1,10 @@
+Runs: 4 
+Stats for: 20 
+AVG. PATH LEN: 20
+AVG. EXPANDED: 37
+Stats for: 50 
+AVG. PATH LEN: 47
+AVG. EXPANDED: 106
+Stats for: 100 
+AVG. PATH LEN: 96
+AVG. EXPANDED: 232
